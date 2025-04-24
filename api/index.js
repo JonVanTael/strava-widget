@@ -4,9 +4,9 @@ const app = express();
 
 const CLIENT_ID = '156548';
 const CLIENT_SECRET = 'a2e6928a8fe8a9461dafb60f799d30da5a0d20e8';
-let accessToken = 'YOUR_ACCESS_TOKEN'; // I’ll provide this after deployment
-let refreshToken = 'YOUR_REFRESH_TOKEN'; // I’ll provide this after deployment
-let tokenExpiresAt = 1714133910 * 1000; // I’ll update this with the correct timestamp
+let accessToken = '5f8a9d1b2c3e4f5a6b7c8d9e0f1a2b3c4d5e6f7';
+let refreshToken = 'a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b';
+let tokenExpiresAt = 1714133910 * 1000;
 
 app.use(express.json());
 app.use((req, res, next) => {
