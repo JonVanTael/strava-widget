@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cycling Hub Belgium Rides</title>
+  <style>
+    body {
+      background: #000;
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 2rem;
+      box-sizing: border-box;
+    }
+
+    .rides-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .ride-card {
+      background: #111;
+      color: #fff;
+      padding: 1.5rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .ride-card:hover {
+      transform: translateY(-5px) scale(1.02);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+    }
+
+    .ride-title {
+      color: #FC4C02;
+      font-size: 1.2rem;
+      margin: 0 0 0.5rem;
+    }
+
+    .ride-info {
+      color: #ccc;
+      font-size: 0.95rem;
+      margin: 0.3rem 0;
+    }
+
+    .cta-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: #FC4C02;
+      color: #fff;
+      padding: 0.8rem 1.6rem;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: background 0.3s ease;
+    }
+
+    .cta-button:hover {
+      background: #e04300;
+    }
+
+    .strava-icon {
+      fill: #fff;
+    }
+
+    @media (max-width: 600px) {
+      .rides-container {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="rides-container"></div>
+  <a href="https://www.strava.com/clubs/1298408" target="_blank" class="cta-button">
+    <svg class="strava-icon" width="20" height="20" viewBox="0 0 24 24" fill="#fff">
+      <path d="M15.387 2.56l-7.2 12.853h4.8l-2.4 4.267h7.2l4.8-8.534h-4.8l2.4-4.267z"/>
+    </svg>
+    Bekijk alle groepsritten
+  </a>
+  <script>
+    async function fetchRides() {
+      try {
+        const response = await fetch('/api/rides');
+        const rides = await response.json();
+        renderRides(rides.slice(0, 3));
+      } catch (error) {
+        console.error('Error fetching rides:', error);
+        document.querySelector('.rides-container').innerHTML = '<p>Kon ritten niet laden.</p>';
+      }
+    }
+
+    function renderRides(rides) {
+      const container = document.querySelector('.rides-container');
+      container.innerHTML = rides.map(ride => `
+        <div class="ride-card">
+          <h3 class="ride-title">${ride.name}</h3>
+          <p class="ride-info">
+            ${new Date(ride.start_date).toLocaleDateString('nl-BE', { weekday: 'long', day: 'numeric', month: 'long' })} – 
+            ${(ride.distance / 1000).toFixed(1)} km – 
+            ${(ride.average_speed * 3.6).toFixed(1)} km/u
+          </p>
+          <p class="ride-info">${ride.start_latlng ? `Start: ${ride.start_latlng.join(', ')}` : 'Locatie onbekend'}</p>
+        </div>
+      `).join('');
+    }
+
+    fetchRides();
+  </script>
+</body>
+</html>
