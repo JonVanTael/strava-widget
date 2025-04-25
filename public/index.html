@@ -91,26 +91,3 @@
         renderRides(rides.slice(0, 3));
       } catch (error) {
         console.error('Error fetching rides:', error);
-        document.querySelector('.rides-container').innerHTML = '<p>Kon ritten niet laden.</p>';
-      }
-    }
-
-    function renderRides(rides) {
-      const container = document.querySelector('.rides-container');
-      container.innerHTML = rides.map(ride => `
-        <div class="ride-card">
-          <h3 class="ride-title">${ride.name}</h3>
-          <p class="ride-info">
-            ${new Date(ride.start_date).toLocaleDateString('nl-BE', { weekday: 'long', day: 'numeric', month: 'long' })} – 
-            ${(ride.distance / 1000).toFixed(1)} km – 
-            ${(ride.average_speed * 3.6).toFixed(1)} km/u
-          </p>
-          <p class="ride-info">${ride.start_latlng ? `Start: ${ride.start_latlng.join(', ')}` : 'Locatie onbekend'}</p>
-        </div>
-      `).join('');
-    }
-
-    fetchRides();
-  </script>
-</body>
-</html>
