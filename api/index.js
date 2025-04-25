@@ -1,12 +1,7 @@
 const express = require('express');
 const axios = require('axios');
+const cheerio = require('cheerio');
 const app = express();
-
-const CLIENT_ID = '156548';
-const CLIENT_SECRET = 'a2e6928a8fe8a9461dafb60f799d30da5a0d20e8';
-let accessToken = 'b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c';
-let refreshToken = 'c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d';
-let tokenExpiresAt = 1745863200 * 1000;
 
 app.use(express.json());
 app.use((req, res, next) => {
@@ -14,46 +9,46 @@ app.use((req, res, next) => {
   next();
 });
 
-async function refreshAccessToken() {
-  if (!refreshToken) {
-    console.error('No refresh token available');
-    throw new Error('No refresh token available');
-  }
-  try {
-    const response = await axios.post('https://www.strava.com/oauth/token', {
-      client_id: CLIENT_ID,
-      client_secret: CLIENT_SECRET,
-      refresh_token: refreshToken,
-      grant_type: 'refresh_token'
-    });
-    accessToken = response.data.access_token;
-    refreshToken = response.data.refresh_token;
-    tokenExpiresAt = response.data.expires_at * 1000;
-    console.log('Token refreshed successfully:', response.data);
-    return response.data;
-  } catch (error) {
-    console.error('Token refresh error:', error.response ? error.response.data : error.message);
-    throw error;
-  }
-}
-
 app.get('/api/rides', async (req, res) => {
   try {
-    if (!accessToken || Date.now() > tokenExpiresAt) {
-      console.log('Access token expired or missing, refreshing token...');
-      await refreshAccessToken();
+    // Fetch the club page HTML
+    const response = await axios.get('https://www.strava.com/clubs/1298408');
+    const html = response.data;
+
+    // Load the HTML into cheerio for parsing
+    const $ = cheerio.load(html);
+
+    // Scrape upcoming group rides
+    const rides = [];
+    // Targeting the group events section (adjust selector based on Strava's HTML structure)
+    $('.group-event-card').each((index, element) => {
+      if (index >= 3) return false; // Limit to 3 rides
+      
+      const title = $(element).find('.group-event-card__title').text().trim();
+      const date = $(element).find('.group-event-card__date').text().trim();
+      const distance = $(element).find('.group-event-card__distance').text().trim();
+      const speed = $(element).find('.group-event-card__pace').text().trim();
+      const location = $(element).find('.group-event-card__location').text().trim();
+
+      rides.push({
+        title: title || 'No title',
+        date: date || 'No date',
+        distance: distance || 'No distance',
+        speed: speed || 'No speed',
+        location: location || 'No location'
+      });
+    });
+
+    // If no rides are found, log a message
+    if (rides.length === 0) {
+      console.log('No upcoming group rides found on the page.');
     }
 
-    console.log('Fetching upcoming group rides with access token:', accessToken);
-    const response = await axios.get('https://www.strava.com/api/v3/clubs/1298408/group_events', {
-      headers: { Authorization: `Bearer ${accessToken}` },
-      params: { per_page: 3 }
-    });
-    console.log('Upcoming group rides fetched successfully:', response.data);
-    res.json(response.data);
+    console.log('Scraped upcoming group rides:', rides);
+    res.json(rides);
   } catch (error) {
-    console.error('Error in /api/rides:', error.response ? error.response.data : error.message);
-    res.status(500).json({ error: 'Failed to fetch group rides', details: error.response ? error.response.data : error.message });
+    console.error('Error scraping group rides:', error.message);
+    res.status(500).json({ error: 'Failed to scrape group rides', details: error.message });
   }
 });
 
