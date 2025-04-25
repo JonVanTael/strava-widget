@@ -1,6 +1,5 @@
 const express = require('express');
-const axios = require('axios');
-const cheerio = require('cheerio');
+const puppeteer = require('puppeteer');
 const app = express();
 
 app.use(express.json());
@@ -10,73 +9,58 @@ app.use((req, res, next) => {
 });
 
 app.get('/api/rides', async (req, res) => {
+  let browser;
   try {
-    // Try to fetch the group events page (this URL might not work directly)
-    const response = await axios.get('https://www.strava.com/clubs/1298408/group_events', {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-      }
+    // Launch a headless browser
+    browser = await puppeteer.launch({
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
     });
-    const html = response.data;
+    const page = await browser.newPage();
 
-    // Load the HTML into cheerio for parsing
-    const $ = cheerio.load(html);
-
-    // Scrape upcoming group rides (adjust selectors based on actual HTML)
-    const rides = [];
-    $('.group-event-card').each((index, element) => {
-      if (index >= 3) return false; // Limit to 3 rides
-
-      const title = $(element).find('.group-event-card__title').text().trim();
-      const date = $(element).find('.group-event-card__date').text().trim();
-      const distance = $(element).find('.group-event-card__distance').text().trim();
-      const speed = $(element).find('.group-event-card__pace').text().trim();
-      const location = $(element).find('.group-event-card__location').text().trim();
-
-      rides.push({
-        title: title || 'No title',
-        date: date || 'No date',
-        distance: distance || 'No distance',
-        speed: speed || 'No speed',
-        location: location || 'No location'
-      });
+    // Navigate to the club page
+    await page.goto('https://www.strava.com/clubs/1298408', {
+      waitUntil: 'networkidle2'
     });
 
-    if (rides.length === 0) {
-      console.log('No upcoming group rides found on the page.');
-      // Fallback: Scrape the main club page for any event-related content
-      const mainPageResponse = await axios.get('https://www.strava.com/clubs/1298408', {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-        }
-      });
-      const mainHtml = mainPageResponse.data;
-      const $main = cheerio.load(mainHtml);
+    // Wait for the group events section to load (adjust selector as needed)
+    await page.waitForSelector('[data-testid="group-events-section"], .group-events', { timeout: 10000 });
 
-      $main('.group-event-card, .event-card, [data-testid="group-event"]').each((index, element) => {
-        if (index >= 3) return false;
+    // Scrape the upcoming group rides
+    const rides = await page.evaluate(() => {
+      const rideElements = document.querySelectorAll('[data-testid="group-event"], .group-event-card');
+      const ridesArray = [];
 
-        const title = $main(element).find('[data-testid="event-title"], .title').text().trim();
-        const date = $main(element).find('[data-testid="event-date"], .date').text().trim();
-        const distance = $main(element).find('[data-testid="event-distance"], .distance').text().trim();
-        const speed = $main(element).find('[data-testid="event-pace"], .pace').text().trim();
-        const location = $main(element).find('[data-testid="event-location"], .location').text().trim();
+      rideElements.forEach((element, index) => {
+        if (index >= 3) return; // Limit to 3 rides
 
-        rides.push({
-          title: title || 'No title',
-          date: date || 'No date',
-          distance: distance || 'No distance',
-          speed: speed || 'No speed',
-          location: location || 'No location'
+        const title = element.querySelector('[data-testid="event-title"], .title')?.innerText.trim() || 'No title';
+        const date = element.querySelector('[data-testid="event-date"], .date')?.innerText.trim() || 'No date';
+        const distance = element.querySelector('[data-testid="event-distance"], .distance')?.innerText.trim() || 'No distance';
+        const speed = element.querySelector('[data-testid="event-pace"], .pace')?.innerText.trim() || 'No speed';
+        const location = element.querySelector('[data-testid="event-location"], .location')?.innerText.trim() || 'No location';
+
+        ridesArray.push({
+          title,
+          date,
+          distance,
+          speed,
+          location
         });
       });
-    }
+
+      return ridesArray;
+    });
 
     console.log('Scraped upcoming group rides:', rides);
     res.json(rides);
   } catch (error) {
-    console.error('Error scraping group rides:', error.message);
+    console.error('Error scraping group rides with puppeteer:', error.message);
     res.status(500).json({ error: 'Failed to scrape group rides', details: error.message });
+  } finally {
+    if (browser) {
+      await browser.close();
+    }
   }
 });
 
