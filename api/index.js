@@ -44,16 +44,16 @@ app.get('/api/rides', async (req, res) => {
       await refreshAccessToken();
     }
 
-    console.log('Fetching athlete activities with access token:', accessToken);
-    const response = await axios.get('https://www.strava.com/api/v3/athlete/activities', {
+    console.log('Fetching upcoming group rides with access token:', accessToken);
+    const response = await axios.get('https://www.strava.com/api/v3/clubs/1298408/group_events', {
       headers: { Authorization: `Bearer ${accessToken}` },
       params: { per_page: 3 }
     });
-    console.log('Activities fetched successfully:', response.data);
+    console.log('Upcoming group rides fetched successfully:', response.data);
     res.json(response.data);
   } catch (error) {
     console.error('Error in /api/rides:', error.response ? error.response.data : error.message);
-    res.status(500).json({ error: 'Failed to fetch rides', details: error.response ? error.response.data : error.message });
+    res.status(500).json({ error: 'Failed to fetch group rides', details: error.response ? error.response.data : error.message });
   }
 });
 
