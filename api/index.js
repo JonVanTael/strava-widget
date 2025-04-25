@@ -4,9 +4,9 @@ const app = express();
 
 const CLIENT_ID = '156548';
 const CLIENT_SECRET = 'a2e6928a8fe8a9461dafb60f799d30da5a0d20e8';
-let accessToken = '3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2';
-let refreshToken = 'b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c';
-let tokenExpiresAt = 1745849100 * 1000;
+let accessToken = 'c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d';
+let refreshToken = 'd2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e';
+let tokenExpiresAt = 1745852400 * 1000;
 
 app.use(express.json());
 app.use((req, res, next) => {
